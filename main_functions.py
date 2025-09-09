@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import asyncio
 import google.generativeai as genai
 
 # --- Constants ---
@@ -9,7 +10,7 @@ GEMINI_LATEST_MODEL = "gemini-2.5-pro"
 
 # --- Core Functions ---
 
-def gemini_chat_simple(prompt: str, system_prompt: str = '', model: str = GEMINI_FLASH_MODEL, api_key: str = None) -> str:
+async def gemini_chat_simple(prompt: str, system_prompt: str = '', model: str = GEMINI_FLASH_MODEL, api_key: str = None) -> str:
     """
     A simple, direct chat with the Gemini API.
 
@@ -32,14 +33,15 @@ def gemini_chat_simple(prompt: str, system_prompt: str = '', model: str = GEMINI
             model_name=model,
             system_instruction=system_prompt if system_prompt else None
         )
-        response = genai_model.generate_content(prompt)
+        # Use asyncio.to_thread to run the blocking API call in a thread pool
+        response = await asyncio.to_thread(genai_model.generate_content, prompt)
         return response.text
     except Exception as e:
         print(f"❌ An error occurred in gemini_chat_simple: {e}")
         # In a service context, you might want to raise a specific HTTP exception
         raise
 
-def gemini_structured_output_with_schema(
+async def gemini_structured_output_with_schema(
     user_content: str, 
     system_prompt: str, 
     json_schema: dict, 
@@ -91,7 +93,8 @@ JSON Schema:
             )
             
             # Enable JSON mode for models that support it
-            response = genai_model.generate_content(
+            response = await asyncio.to_thread(
+                genai_model.generate_content,
                 user_content,
                 generation_config=genai.types.GenerationConfig(
                     response_mime_type="application/json",
@@ -131,7 +134,7 @@ JSON Schema:
                             'message': f'JSON parsing failed after {max_retries} attempts: {e}',
                             'response_time': time.time() - start_time, 'retries_used': attempt + 1
                         }
-                    time.sleep(2 ** attempt)  # Exponential backoff
+                    await asyncio.sleep(2 ** attempt)  # Exponential backoff
             else:
                 print(f"❌ Attempt {attempt + 1}: Empty response from Gemini API.")
                 if attempt == max_retries - 1:
@@ -140,7 +143,7 @@ JSON Schema:
                         'message': f'Empty response from Gemini API after {max_retries} attempts.',
                         'response_time': time.time() - start_time, 'retries_used': attempt + 1
                     }
-                time.sleep(2 ** attempt)
+                await asyncio.sleep(2 ** attempt)
 
         except Exception as e:
             print(f"❌ Attempt {attempt + 1}: Gemini API error: {e}")
@@ -150,7 +153,7 @@ JSON Schema:
                     'message': f'Gemini API error after {max_retries} attempts: {e}',
                     'response_time': time.time() - start_time, 'retries_used': attempt + 1
                 }
-            time.sleep(2 ** attempt)
+            await asyncio.sleep(2 ** attempt)
 
     return {
         'success': False, 'data': None,
@@ -160,7 +163,7 @@ JSON Schema:
 
 # --- Schema-Specific Helper Functions ---
 
-def gemini_cinematic_story_design(user_content: str, system_prompt: str, model: str = None, api_key: str = None, max_retries: int = 3) -> dict:
+async def gemini_cinematic_story_design(user_content: str, system_prompt: str, model: str = None, api_key: str = None, max_retries: int = 3) -> dict:
     """
     Generates a full cinematic story design using a predefined schema.
     This is a direct replacement for the previous OpenAI-based structured output function.
@@ -228,7 +231,7 @@ def gemini_cinematic_story_design(user_content: str, system_prompt: str, model: 
             "scene_list", "scene_audio_language", "tweet"
         ]
     }
-    return gemini_structured_output_with_schema(
+    return await gemini_structured_output_with_schema(
         user_content=user_content,
         system_prompt=system_prompt,
         json_schema=schema,

@@ -1,7 +1,5 @@
 import os
 import asyncio
-import functools
-from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, request, jsonify
 from main_functions import (
     gemini_chat_simple,
@@ -34,7 +32,6 @@ except RuntimeError:
     asyncio.set_event_loop(loop)
 
 semaphore = asyncio.Semaphore(GEMINI_CONCURRENCY_LIMIT)
-executor = ThreadPoolExecutor(max_workers=20)
 
 print("✅ Gemini Concurrent Service started.")
 print(f"🚦 Global concurrency limit set to: {GEMINI_CONCURRENCY_LIMIT}")
@@ -100,7 +97,7 @@ async def process_request(handler, **kwargs):
     async with semaphore:
         print(f"🟢 Acquired semaphore. Processing request...")
         try:
-            result = handler(**kwargs)
+            result = await handler(**kwargs)
             print("✅ Request processed successfully.")
             return result
         except Exception as e:
