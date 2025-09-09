@@ -115,7 +115,7 @@ async def handle_chat():
     data = request.get_json()
     prompt = data.get('prompt')
     system_prompt = data.get('system_prompt', '')
-    model = data.get('model', 'gemini-1.5-flash-latest')
+    model = data.get('model', 'gemini-2.5-flash')
 
     if not prompt:
         return jsonify({"error": "Missing required field: prompt"}), 400
@@ -143,7 +143,7 @@ async def handle_structured_output():
     user_content = data.get('user_content')
     system_prompt = data.get('system_prompt', '')
     json_schema = data.get('json_schema')
-    model = data.get('model', 'gemini-1.5-pro-latest')
+    model = data.get('model', 'gemini-2.5-pro')
 
     if not all([user_content, system_prompt, json_schema]):
         return jsonify({"error": "Missing one or more required fields: user_content, system_prompt, json_schema"}), 400
@@ -171,7 +171,7 @@ async def handle_cinematic_story_design():
     data = request.get_json()
     user_content = data.get('user_content')
     system_prompt = data.get('system_prompt', '')
-    model = data.get('model', 'gemini-1.5-pro-latest')
+    model = data.get('model', 'gemini-2.5-pro')
 
     if not all([user_content, system_prompt]):
         return jsonify({"error": "Missing one or more required fields: user_content, system_prompt"}), 400

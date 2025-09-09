@@ -99,7 +99,7 @@ The service provides three main endpoints, each optimized for different use case
 
 ### 🎯 **System Prompt Best Practices**
 
-**为了获得最佳的Structured Output效果，强烈建议针对你的schema提供专门的system prompt！**
+**For optimal Structured Output results, we strongly recommend providing schema-specific system prompts!**
 
 - **Generic prompts** ❌: "Extract information"  
 - **Schema-specific prompts** ✅: "You are a story designer. Create a complete cinematic story with characters, scenes, and narrative structure following the provided schema."
@@ -127,7 +127,7 @@ The service provides three main endpoints, each optimized for different use case
 |-----------|------|----------|---------|-------------|
 | `prompt` | string | ✅ **Yes** | - | The user's message/question |
 | `system_prompt` | string | ❌ Optional | `""` | Instructions for the AI's behavior |
-| `model` | string | ❌ Optional | `gemini-1.5-flash-latest` | Gemini model to use |
+| `model` | string | ❌ Optional | `gemini-2.5-flash` | Gemini model to use |
 | `credentials.gemini_api_key` | string | ✅ **Required*** | - | Your Gemini API key |
 
 *\*Required unless using Admin-API-Key header*
@@ -171,7 +171,7 @@ curl -X POST http://localhost:5004/chat \
 | `user_content` | string | ✅ **Yes** | - | The content to process/extract from |
 | `system_prompt` | string | ✅ **Yes** | - | **Critical**: Schema-specific instructions for best results |
 | `json_schema` | object | ✅ **Yes** | - | JSON Schema definition for the expected output structure |
-| `model` | string | ❌ Optional | `gemini-1.5-pro-latest` | Gemini model to use |
+| `model` | string | ❌ Optional | `gemini-2.5-pro` | Gemini model to use |
 | `credentials.gemini_api_key` | string | ✅ **Required*** | - | Your Gemini API key |
 
 *\*Required unless using Admin-API-Key header*
@@ -230,7 +230,7 @@ curl -X POST http://localhost:5004/structured-output \
 |-----------|------|----------|---------|-------------|
 | `user_content` | string | ✅ **Yes** | - | Story concept, theme, or outline to develop |
 | `system_prompt` | string | ✅ **Yes** | - | **Critical**: Story-specific instructions for best cinematic results |
-| `model` | string | ❌ Optional | `gemini-1.5-pro-latest` | Gemini model to use |
+| `model` | string | ❌ Optional | `gemini-2.5-pro` | Gemini model to use |
 | `credentials.gemini_api_key` | string | ✅ **Required*** | - | Your Gemini API key |
 
 *\*Required unless using Admin-API-Key header*
