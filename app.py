@@ -6,7 +6,9 @@ from flask import Flask, request, jsonify
 from main_functions import (
     gemini_chat_simple,
     gemini_structured_output_with_schema,
-    gemini_cinematic_story_design
+    gemini_cinematic_story_design,
+    GEMINI_FLASH_MODEL,
+    GEMINI_LATEST_MODEL
 )
 
 # --- App Initialization ---
@@ -115,7 +117,7 @@ async def handle_chat():
     data = request.get_json()
     prompt = data.get('prompt')
     system_prompt = data.get('system_prompt', '')
-    model = data.get('model', 'gemini-2.5-flash')
+    model = data.get('model', GEMINI_FLASH_MODEL)
 
     if not prompt:
         return jsonify({"error": "Missing required field: prompt"}), 400
@@ -143,7 +145,7 @@ async def handle_structured_output():
     user_content = data.get('user_content')
     system_prompt = data.get('system_prompt', '')
     json_schema = data.get('json_schema')
-    model = data.get('model', 'gemini-2.5-pro')
+    model = data.get('model', GEMINI_LATEST_MODEL)
 
     if not all([user_content, system_prompt, json_schema]):
         return jsonify({"error": "Missing one or more required fields: user_content, system_prompt, json_schema"}), 400
@@ -171,7 +173,7 @@ async def handle_cinematic_story_design():
     data = request.get_json()
     user_content = data.get('user_content')
     system_prompt = data.get('system_prompt', '')
-    model = data.get('model', 'gemini-2.5-pro')
+    model = data.get('model', GEMINI_LATEST_MODEL)
 
     if not all([user_content, system_prompt]):
         return jsonify({"error": "Missing one or more required fields: user_content, system_prompt"}), 400
