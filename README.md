@@ -1,30 +1,20 @@
-# Gemini Concurrent Generation Service v2.0
+# Gemini Concurrent Generation Service
 
 A high-performance, self-hosted FastAPI application for concurrent Google Gemini API operations, featuring intelligent batch processing, global concurrency management, and External Semaphore Pattern support.
 
-## 🚀 Version 2.0 Architecture Highlights
-
-- **🏗️ Pure FastAPI Architecture**: Complete rewrite from Flask+AsyncIO to pure FastAPI for better async performance
-- **🌐 External Semaphore Pattern**: Cross-service concurrency coordination following animagent-process best practices
-- **📋 Batch Processing**: Standardized List of Dict input/output structure for optimal throughput
-- **🔒 3-Tier Authentication**: Admin API Key → User Credentials → Environment Variables priority system
-- **⚡ Global Concurrency Control**: Shared semaphore pool prevents API limit violations across all requests
-
 ## Purpose & Overview
 
-**核心目标 (Core Objective):** 最大限度地利用Google Gemini API的高并发处理能力，让个人的Gemini API账号支持尽可能大的并行处理，最大努力提高Large Language Model交互效率。
+This service maximizes Google Gemini API's concurrency capabilities, enabling individual API accounts to achieve optimal parallel processing while maintaining strict rate limit compliance and preventing API throttling.
 
-**English:** This service maximizes Google Gemini API's concurrency capabilities, enabling individual API accounts to achieve optimal parallel processing while maintaining strict rate limit compliance and preventing API throttling.
+### Key Features
 
-### Key Design Principles:
-
-1. **🔄 External Semaphore Pattern**: Enables cross-service concurrency control following volcengine-concurrent-tts template
+1. **🔄 External Semaphore Pattern**: Enables cross-service concurrency control for multi-service deployments
 2. **🚦 Global Concurrency Management**: All requests share a single semaphore pool to respect API limits
 3. **📊 Batch Processing**: List of Dict structure for optimal throughput and perfect input/output correspondence
 4. **🛡️ Account Protection**: Never exceeds Google Gemini API limits regardless of concurrent client load
 5. **⚡ FastAPI Performance**: Pure async architecture for maximum efficiency
 
-### Google Gemini API Rate Limits (2024-2025):
+### Google Gemini API Rate Limits
 
 | Tier | RPM (Requests/Min) | TPM (Tokens/Min) | RPD (Requests/Day) | **Recommended Concurrency** |
 |------|-------------------|------------------|-------------------|----------------------------|
@@ -35,44 +25,38 @@ A high-performance, self-hosted FastAPI application for concurrent Google Gemini
 
 This service automatically manages concurrency to maximize throughput while staying within your tier's limits.
 
-## 🌟 Key Features
+## Core Features
 
-### 🚦 **Global Concurrency Control**
+### 🚦 Global Concurrency Control
 - **Single Shared Semaphore**: All requests across ALL clients share one global semaphore pool
 - **API Protection**: Never exceeds your Gemini API account limits regardless of concurrent client load
 - **Rate Limit Compliance**: Automatic queue management prevents API throttling and 429 errors
 
-### 🌐 **External Semaphore Pattern Support**
+### 🌐 External Semaphore Pattern Support
 - **Cross-Service Coordination**: Supports external semaphore registry for multi-service concurrency control
 - **Global Semaphore Registry**: `/_admin/semaphores` endpoint for cross-service coordination
-- **Best Practice Compliance**: Follows volcengine-concurrent-tts template architecture
+- **Template Architecture**: Follows proven concurrency management patterns
 
-### 📋 **Batch Processing Architecture**
+### 📋 Batch Processing Architecture
 - **List of Dict Structure**: Standardized input/output format for optimal throughput
 - **Perfect Correspondence**: Each input request maps exactly to one output result
 - **Backward Compatibility**: Legacy single-request endpoints still supported
 
-### 🔐 **3-Tier Authentication System**
+### 🔐 3-Tier Authentication System
 1. **Admin API Key** (Highest Priority) → Uses server's configured credentials
 2. **User Credentials** (Medium Priority) → Uses credentials from request payload  
 3. **Environment Variables** (Lowest Priority) → Fallback to .env configuration
 
-### 🎭 **Dual-Mode Operation**
+### 🎭 Dual-Mode Operation
 - **Individual Endpoints**: Traditional single-request processing (`/chat`, `/structured-output`, etc.)
 - **Batch Endpoints**: High-throughput batch processing (`/batch/chat`, `/batch/structured-output`, etc.)
 - **Flexible Input**: Both modes support the same authentication and parameter structure
 
-### 🐳 **Production Ready**
-- **Pure FastAPI**: High-performance async architecture
-- **Docker Support**: Fully containerized for easy deployment
-- **Health Monitoring**: Comprehensive status endpoints with semaphore monitoring
-- **Error Handling**: Robust error handling with detailed logging
-
-## 🔐 Authentication System
+## Authentication System
 
 The service implements a **3-tier authentication priority system** that provides flexibility for different deployment scenarios while maintaining security.
 
-### 🥇 **Tier 1: Admin API Key (Highest Priority)**
+### Tier 1: Admin API Key (Highest Priority)
 
 **For trusted internal services and production deployments**
 
@@ -93,7 +77,7 @@ curl -X POST http://localhost:5004/chat \
   -d '{"prompt": "Hello world"}'
 ```
 
-### 🥈 **Tier 2: User-Provided Credentials (Medium Priority)**
+### Tier 2: User-Provided Credentials (Medium Priority)
 
 **For external clients and user-specific API usage**
 
@@ -116,7 +100,7 @@ curl -X POST http://localhost:5004/chat \
   }'
 ```
 
-### 🥉 **Tier 3: Environment Variables (Lowest Priority)**
+### Tier 3: Environment Variables (Lowest Priority)
 
 **For simple deployments and backward compatibility**
 
@@ -136,15 +120,15 @@ curl -X POST http://localhost:5004/chat \
   -d '{"prompt": "Hello world"}'
 ```
 
-### 🚫 **Authentication Failure**
+### Authentication Failure
 
 If none of the three tiers provide valid credentials, the service returns:
 - **Status Code**: `401 Unauthorized`
 - **Message**: `"Authentication failed. Provide 'Admin-API-Key' in headers or complete credentials in payload."`
 
-## 🚀 Deployment & Configuration
+## Deployment & Configuration
 
-### ⚙️ **Environment Variables**
+### Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -153,12 +137,12 @@ If none of the three tiers provide valid credentials, the service returns:
 | `GEMINI_CONCURRENCY_LIMIT` | ❌ Optional | `15` | Maximum concurrent requests (adjust per your Gemini tier) |
 | `PORT` | ❌ Optional | `5004` | Port number for the FastAPI server |
 
-### 🐳 **Docker Deployment**
+### Docker Deployment
 
 **Build the Docker Image:**
 ```bash
-cd animagent-process/gemini-concurrent-generation
-docker build -t gemini-concurrent-generation:v2.0 .
+cd gemini-concurrent-generation
+docker build -t gemini-concurrent-generation:latest .
 ```
 
 **Production Deployment (Admin + Server Keys):**
@@ -169,7 +153,7 @@ docker run -d \
   -e ADMIN_API_KEY="your_secure_admin_key_here" \
   -e GEMINI_API_KEY="your_gemini_api_key_here" \
   -e GEMINI_CONCURRENCY_LIMIT=20 \
-  gemini-concurrent-generation:v2.0
+  gemini-concurrent-generation:latest
 ```
 
 **Development Deployment (Environment Fallback Only):**
@@ -179,7 +163,7 @@ docker run -d \
   -p 5004:5004 \
   -e GEMINI_API_KEY="your_gemini_api_key_here" \
   -e GEMINI_CONCURRENCY_LIMIT=5 \
-  gemini-concurrent-generation:v2.0
+  gemini-concurrent-generation:latest
 ```
 
 **Public Service (User Credentials Only):**
@@ -188,14 +172,14 @@ docker run -d \
   --name gemini-concurrent-generation \
   -p 5004:5004 \
   -e GEMINI_CONCURRENCY_LIMIT=30 \
-  gemini-concurrent-generation:v2.0
+  gemini-concurrent-generation:latest
 ```
 
-### 🛠️ **Local Development**
+### Local Development
 
 **Using conda environment:**
 ```bash
-cd animagent-process/gemini-concurrent-generation
+cd gemini-concurrent-generation
 conda activate animagent
 pip install -r requirements.txt
 
@@ -212,11 +196,11 @@ python app.py
 - **API Documentation**: http://localhost:5004/docs
 - **OpenAPI Schema**: http://localhost:5004/openapi.json
 
-## 📊 API Endpoints Overview
+## API Endpoints Overview
 
 The service provides **dual-mode operation** with both individual and batch processing endpoints:
 
-### 🎯 **Endpoint Categories**
+### Endpoint Categories
 
 | Category | Individual Endpoints | Batch Endpoints | Best For |
 |----------|---------------------|-----------------|----------|
@@ -225,25 +209,23 @@ The service provides **dual-mode operation** with both individual and batch proc
 | **🎬 Cinematic** | `/cinematic-story-design` | `/batch/cinematic-story-design` | Story generation |
 | **🔧 Admin** | `/_admin/*` | - | Service management |
 
-### ⚡ **Performance Comparison**
+### Performance Comparison
 
 | Mode | Input Format | Output Format | Throughput | Best Use Case |
 |------|-------------|---------------|------------|---------------|
 | **Individual** | Single request object | Single response | ⭐⭐⭐ Standard | Simple integrations, single requests |
 | **Batch** | `List[Dict]` | `List[Dict]` | ⭐⭐⭐⭐⭐ **Optimal** | High-throughput, bulk processing |
 
-### 🚀 **Batch Processing Benefits**
+### Batch Processing Benefits
 
 - **📈 Higher Throughput**: Process multiple requests concurrently within shared semaphore
 - **📊 Perfect Correspondence**: Each input maps exactly to one output in the same order
 - **⚡ Optimal Resource Usage**: Single API call handles multiple Gemini requests
 - **🔄 Backward Compatible**: Same authentication and parameter structure as individual endpoints
 
----
+## Health & Admin Endpoints
 
-### 🏥 **Health & Admin Endpoints**
-
-#### Health Check
+### Health Check
 - **Endpoint**: `GET /`
 - **Description**: Service status, configuration, and semaphore monitoring
 - **Authentication**: None required
@@ -252,7 +234,7 @@ The service provides **dual-mode operation** with both individual and batch proc
 curl http://localhost:5004/
 ```
 
-#### Admin Semaphore Registry
+### Admin Semaphore Registry
 - **Endpoint**: `GET /_admin/semaphores`
 - **Description**: External semaphore management for cross-service coordination
 - **Authentication**: Admin API Key required
@@ -261,7 +243,7 @@ curl http://localhost:5004/
 curl -H "Admin-API-Key: your_admin_key" http://localhost:5004/_admin/semaphores
 ```
 
-## 💬 Chat Endpoints
+## Chat Endpoints
 
 ### Individual Chat: `POST /chat`
 
@@ -363,7 +345,7 @@ curl -X POST http://localhost:5004/chat \
 }
 ```
 
-## 📋 Structured Output Endpoints
+## Structured Output Endpoints
 
 ### Individual Structured Output: `POST /structured-output`
 
@@ -466,7 +448,7 @@ curl -X POST http://localhost:5004/structured-output \
 }
 ```
 
-## 🎬 Cinematic Story Design Endpoints
+## Cinematic Story Design Endpoints
 
 ### Individual Cinematic Story: `POST /cinematic-story-design`
 
@@ -530,9 +512,7 @@ curl -X POST http://localhost:5004/cinematic-story-design \
 }
 ```
 
----
-
-## 🌐 External Semaphore Pattern
+## External Semaphore Pattern
 
 ### Cross-Service Concurrency Control
 
@@ -555,20 +535,8 @@ curl -X POST http://localhost:5004/_admin/semaphores \
 }
 ```
 
-This enables multiple AI services (Gemini, Replicate, VolcEngine) to share a **single global concurrency pool**, preventing total API usage from exceeding account limits.
+This enables multiple AI services to share a **single global concurrency pool**, preventing total API usage from exceeding account limits.
 
----
+## License
 
-## 🚀 Migration from v1.0
-
-### Breaking Changes:
-- **❌ Flask removed**: Pure FastAPI architecture 
-- **❌ File management removed**: URL-only responses for security
-- **✅ Batch endpoints added**: New `/batch/*` endpoints with List[Dict] structure
-- **✅ External semaphore support**: Cross-service coordination
-- **✅ Enhanced authentication**: 3-tier priority system
-
-### Backward Compatibility:
-- **✅ All individual endpoints**: Same API contract as v1.0
-- **✅ Authentication methods**: Previous auth methods still work
-- **✅ Response formats**: Individual endpoint responses unchanged
+This project is licensed under the MIT License - see the LICENSE file for details.
