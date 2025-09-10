@@ -1,0 +1,186 @@
+{
+"type": "object",
+"properties": {
+    "illustration_style": {
+        "type": "string",
+        "description": "Illustration style for the story, for example: Traditional Chinese Ink Illustration"
+    },
+    "story_title": {
+        "type": "string",
+        "description": "Title of the story, extracted from the content or created if not present, no special characters that can be used for file name or folder name."
+    },
+    "youtube_video_title": {
+        "type": "string",
+        "description": "Title of the YouTube video with eye-catching keywords, add author's name if known. Separate different keywords by | and keep total length under 100 characters"
+    },
+    "youtube_video_description": {
+        "type": "string",
+        "description": "Description of the YouTube video. Begin with keywords to help viewers find your video easily. Less than 4000 characters."
+    },
+    "youtube_video_hashtags": {
+        "type": "string",
+        "description": "Relevant hashtags for YouTube, TikTok, and Twitter. Max 10 hashtags under 100 characters, separated by space and all lowercase."
+    },
+    "cover_image_description": {
+        "type": "string",
+        "description": "Detailed visual description of the cover image prompt for AI generation, must include the main character and story title, styled for adult historical storytelling"
+    },
+    "narrator_name": {
+        "type": "string",
+        "description": "Name of the narrator, must be a character from the story"
+    },
+    "narrator_gender": {
+        "type": "string",
+        "enum": [
+            "male",
+            "female",
+            "neutral"
+        ],
+        "description": "Gender of the narrator, must be a character from the story"
+    },
+    "narrator_voice_id": {
+        "type": "string",
+        "description": "Voice ID that matches the narrator the best, especially the gender must match. Must choose from the given voice_id_list."
+    },
+    "cover_image_characters": {
+        "type": "array",
+        "items": {
+            "type": "string"
+        },
+        "description": "List of characters to appear in the cover image, must exist in character_list. All lowercase."
+    },
+    "character_list": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "character_number": {
+                    "type": "integer",
+                    "description": "Unique identifier number for the character"
+                },
+                "character_name": {
+                    "type": "string",
+                    "description": "Name of the character in lowercase, the first character must be the major charactor (not the narrator) of the whole story."
+                },
+                "character_image_description": {
+                    "type": "string",
+                    "description": "Detailed visual description of the character (only one) that will be used as a prompt for image generation, focusing on appearance and personality traits that can be illustrated clearly."
+                }
+            },
+            "required": [
+                "character_number",
+                "character_name",
+                "character_image_description"
+            ]
+        },
+        "description": "List of essential characters who are major characters in at least 2 scenes, max 20 characters"
+    },
+    "chapter_list": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "chapter_number": {
+                    "type": "integer",
+                    "description": "Sequential number identifying the chapters"
+                },
+                "chapter_name": {
+                    "type": "string",
+                    "description": "Descriptive name for the chapter"
+                },
+                "chapter_scene_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "description": "List of scenes that belong to this chapter"
+                }
+            },
+            "required": [
+                "chapter_number",
+                "chapter_name",
+                "chapter_scene_list"
+            ]
+        },
+        "description": "List of chapters index and chapter name and scenes that belong to this chapter"
+    },
+    "scene_list": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "scene_number": {
+                    "type": "integer",
+                    "description": "Sequential number identifying the scenes"
+                },
+                "scene_name": {
+                    "type": "string",
+                    "description": "Descriptive name for the scene"
+                },
+                "scene_image_description": {
+                    "type": "string",
+                    "description": "Detailed visual description of the scene that will be used as a prompt for image generation, designed to be visually engaging for storytelling."
+                },
+                "scene_major_character": {
+                    "type": "string",
+                    "description": "The ONE major character that is the visual focus of this scene, in lowercase, could not be NULL. Never put narrator name here."
+                },
+                "scene_other_characters": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "List of other characters that will be included in the scene, could be null if there's no need to highlight any other character in this scene."
+                },
+                "scene_audio_script": {
+                    "type": "string",
+                    "description": "Script text for this scene, designed for around 60 seconds of spoken narration, try not repeat what you've said in the previous scenes."
+                },
+                "is_intentional_repetition": {
+                    "type": "string",
+                    "enum": [
+                        "yes",
+                        "no"
+                    ],
+                    "description": "Set to 'yes' ONLY if the `scene_audio_script` is or has an intentional, artistic repetition of the previous scene's sentences for dramatic effect. In all other cases, it should be 'no'. Always use lowercase yes or no."
+                }
+            },
+            "required": [
+                "scene_number",
+                "scene_name",
+                "scene_image_description",
+                "scene_major_character",
+                "scene_other_characters",
+                "scene_audio_script",
+                "is_intentional_repetition"
+            ]
+        },
+        "description": "List of scenes with visually rich prompts and narration script."
+    },
+    "scene_audio_language": {
+        "type": "string",
+        "description": "In which language the `scene_audio_script` is written. Always use lowercase."
+    },
+    "tweet": {
+        "type": "string",
+        "description": "A concise, engaging tweet text for Twitter promotion. Must be under 240 characters to leave room for YouTube URL. Should capture the essence of the story and encourage viewers to watch the video. Include relevant hashtags from youtube_video_hashtags if space allows."
+    }
+},
+"required": [
+    "illustration_style",
+    "story_title",
+    "youtube_video_title",
+    "youtube_video_description",
+    "youtube_video_hashtags",
+    "cover_image_description",
+    "narrator_name",
+    "narrator_gender",
+    "narrator_voice_id",
+    "cover_image_characters",
+    "character_list",
+    "chapter_list",
+    "scene_list",
+    "scene_audio_language",
+    "tweet"
+]
+}

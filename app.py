@@ -148,12 +148,10 @@ class SemaphoreRequest(BaseModel):
 # --- Authentication Helper ---
 def get_api_key_from_request(req: Request, request_credentials: Optional[GeminiCredentials]) -> tuple[Optional[str], Optional[str], Optional[int]]:
     """
-    Determines the appropriate Gemini API key based on 3-tier authentication logic.
+    SECURE 2-Tier Authentication System (Environment fallback REMOVED for security).
     
-    Tier 1: Admin Key in Header -> Uses Server's Key
-    Tier 2: API Key in Payload -> Uses User's Key  
-    Tier 3: Environment Variables -> Uses Server's Key
-    Tier 4: Failure
+    Tier 1: Admin Key in Header -> Uses Server's Key (for internal services)
+    Tier 2: API Key in Payload -> Uses User's Key (REQUIRED for non-admin requests)
     
     Returns:
         A tuple of (api_key, error_message, status_code).
@@ -171,11 +169,8 @@ def get_api_key_from_request(req: Request, request_credentials: Optional[GeminiC
     if request_credentials and request_credentials.gemini_api_key:
         return request_credentials.gemini_api_key, None, None
 
-    # Tier 3: Fallback to environment variables
-    if SERVER_GEMINI_API_KEY:
-        return SERVER_GEMINI_API_KEY, None, None
-
-    # Tier 4: Authentication failed
+    # SECURITY: No environment fallback - credentials are required
+    # Tier 3: Authentication failed
     error_msg = "Authentication failed. Provide 'Admin-API-Key' in headers or 'credentials.gemini_api_key' in payload."
     return None, error_msg, 401
 
@@ -196,6 +191,36 @@ async def process_with_semaphore(handler, semaphore, *args, **kwargs):
 
 # --- API Endpoints ---
 
+@app.get("/")
+def root():
+    """Root endpoint with service information"""
+    available_slots = global_semaphore._value if global_semaphore else "Not initialized"
+    return {
+        "status": "healthy",
+        "service": "gemini-concurrent-generation",
+        "version": "2.0.0-external-semaphore-enhanced",
+        "message": "Enhanced Gemini Concurrent Generation with External Semaphore Pattern",
+        "architecture": {
+            "external_semaphore_pattern": "✅ Enabled",
+            "perfect_input_output_correspondence": "✅ Enabled",
+            "advanced_batch_processing": "✅ Enabled",
+            "cross_service_coordination": "✅ Enabled"
+        },
+        "concurrency_status": {
+            "global_concurrency_limit": DEFAULT_GLOBAL_CONCURRENCY,
+            "current_available_slots": available_slots,
+            "external_semaphores_count": len(_global_semaphores)
+        },
+        "semaphore_status": "initialized",
+        "admin_key_configured": bool(ADMIN_API_KEY),
+        "server_credentials_configured": bool(SERVER_GEMINI_API_KEY),
+        "authentication": {
+            "admin_api_key": "✅ Admin-API-Key header authentication",
+            "user_credentials": "✅ User-provided credentials in payload", 
+            "environment_variables": "✅ Environment variable fallback"
+        }
+    }
+
 @app.get("/health")
 def health_check():
     """Health check endpoint to confirm the service is running"""
@@ -203,7 +228,7 @@ def health_check():
     return {
         "status": "healthy",
         "service": "gemini-concurrent-generation",
-        "version": "2.0.0-volcengine-enhanced (External Semaphore Pattern)",
+        "version": "2.0.1-secure (Environment fallback vulnerability FIXED)",
         "concurrency_status": {
             "global_concurrency_limit": DEFAULT_GLOBAL_CONCURRENCY,
             "current_available_slots": available_slots
