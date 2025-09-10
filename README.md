@@ -196,6 +196,45 @@ python app.py
 - **API Documentation**: http://localhost:5004/docs
 - **OpenAPI Schema**: http://localhost:5004/openapi.json
 
+## Service Health & Status
+
+The service provides a beautiful JSON health endpoint that can be accessed directly in your browser for quick service verification and monitoring.
+
+### Browser Access
+- **Production**: https://animagent.ai/api/gemini-concurrent-generation/
+- **Local Development**: http://localhost:5004/
+
+### Example Response
+```json
+{
+  "status": "healthy",
+  "service": "gemini-concurrent-generation",
+  "version": "2.0.0-external-semaphore-enhanced",
+  "message": "Enhanced Gemini Concurrent Generation with External Semaphore Pattern",
+  "architecture": {
+    "external_semaphore_pattern": "✅ Enabled",
+    "perfect_input_output_correspondence": "✅ Enabled",
+    "advanced_batch_processing": "✅ Enabled",
+    "cross_service_coordination": "✅ Enabled"
+  },
+  "concurrency_status": {
+    "global_concurrency_limit": 15,
+    "current_available_slots": 15,
+    "external_semaphores_count": 0
+  },
+  "semaphore_status": "initialized",
+  "admin_key_configured": true,
+  "server_credentials_configured": true,
+  "authentication": {
+    "admin_api_key": "✅ Admin-API-Key header authentication",
+    "user_credentials": "✅ User-provided credentials in payload",
+    "environment_variables": "✅ Environment variable fallback"
+  }
+}
+```
+
+This endpoint provides real-time service status, configuration details, and concurrency monitoring for operations teams and developers.
+
 ## API Endpoints Overview
 
 The service provides **dual-mode operation** with both individual and batch processing endpoints:
