@@ -49,7 +49,7 @@ This service automatically manages concurrency to maximize throughput while stay
 
 ### 🎭 Dual-Mode Operation
 - **Individual Endpoints**: Traditional single-request processing (`/chat`, `/structured-output`, etc.)
-- **Batch Endpoints**: High-throughput batch processing (`/batch/chat`, `/batch/structured-output`, etc.)
+- **Batch Endpoints**: High-throughput batch processing (`/chat-batch`, `/structured-output-batch`, etc.)
 - **Flexible Input**: Both modes support the same authentication and parameter structure
 
 ## Authentication System
@@ -204,9 +204,9 @@ The service provides **dual-mode operation** with both individual and batch proc
 
 | Category | Individual Endpoints | Batch Endpoints | Best For |
 |----------|---------------------|-----------------|----------|
-| **💬 Chat** | `/chat` | `/batch/chat` | General LLM conversations |
-| **📋 Structured** | `/structured-output` | `/batch/structured-output` | Custom JSON extraction |
-| **🎬 Cinematic** | `/cinematic-story-design` | `/batch/cinematic-story-design` | Story generation |
+| **💬 Chat** | `/chat` | `/chat-batch` | General LLM conversations |
+| **📋 Structured** | `/structured-output` | `/structured-output-batch` | Custom JSON extraction |
+| **🎬 Cinematic** | `/cinematic-story-design` | `/cinematic-story-batch` | Story generation |
 | **🔧 Admin** | `/_admin/*` | - | Service management |
 
 ### Performance Comparison
@@ -295,7 +295,7 @@ curl -X POST http://localhost:5004/chat \
   }'
 ```
 
-### Batch Chat: `POST /batch/chat`
+### Batch Chat: `POST /chat-batch`
 
 **Purpose**: Multiple LLM conversation requests in a single API call
 **Best For**: High-throughput applications, bulk processing, optimal concurrency usage
@@ -384,7 +384,7 @@ curl -X POST http://localhost:5004/structured-output \
   }'
 ```
 
-### Batch Structured Output: `POST /batch/structured-output`
+### Batch Structured Output: `POST /structured-output-batch`
 
 **Purpose**: Multiple structured extractions with different schemas in one API call
 **Best For**: Bulk data processing, multiple extractions, optimal concurrency usage
@@ -487,7 +487,7 @@ curl -X POST http://localhost:5004/cinematic-story-design \
   }'
 ```
 
-### Batch Cinematic Stories: `POST /batch/cinematic-story-design`
+### Batch Cinematic Stories: `POST /cinematic-story-batch`
 
 **Purpose**: Multiple story generation with the same comprehensive schema
 **Best For**: Bulk story creation, series planning, content production pipelines
