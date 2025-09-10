@@ -29,5 +29,5 @@ ENV ADMIN_API_KEY=""
 ENV GEMINI_CONCURRENCY_LIMIT=15
 
 # Run app.py when the container launches
-# Use Gunicorn for a production-ready WSGI server
-CMD ["gunicorn", "--workers", "4", "--bind", "0.0.0.0:5004", "app:app"]
+# Use Uvicorn for FastAPI ASGI server
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5004", "--workers", "1"]

@@ -1,192 +1,395 @@
-# Gemini Concurrent Generation Service
+# Gemini Concurrent Generation Service v2.0
 
-## 1. Project Purpose & Overview
+A high-performance, self-hosted FastAPI application for concurrent Google Gemini API operations, featuring intelligent batch processing, global concurrency management, and External Semaphore Pattern support.
+
+## 🚀 Version 2.0 Architecture Highlights
+
+- **🏗️ Pure FastAPI Architecture**: Complete rewrite from Flask+AsyncIO to pure FastAPI for better async performance
+- **🌐 External Semaphore Pattern**: Cross-service concurrency coordination following animagent-process best practices
+- **📋 Batch Processing**: Standardized List of Dict input/output structure for optimal throughput
+- **🔒 3-Tier Authentication**: Admin API Key → User Credentials → Environment Variables priority system
+- **⚡ Global Concurrency Control**: Shared semaphore pool prevents API limit violations across all requests
+
+## Purpose & Overview
 
 **核心目标 (Core Objective):** 最大限度地利用Google Gemini API的高并发处理能力，让个人的Gemini API账号支持尽可能大的并行处理，最大努力提高Large Language Model交互效率。
 
-**English:** This service is designed to maximize Google Gemini API's high concurrency processing capabilities, enabling individual Gemini API accounts to support the highest possible parallel processing while maximizing efficiency in Large Language Model interactions.
+**English:** This service maximizes Google Gemini API's concurrency capabilities, enabling individual API accounts to achieve optimal parallel processing while maintaining strict rate limit compliance and preventing API throttling.
 
 ### Key Design Principles:
 
-1. **Maximum Async Parallelism**: Utilizes extensive async/await parallel processing to handle multiple requests simultaneously
-2. **Rate Limit Compliance**: Never exceeds Google Gemini's maximum concurrency settings to avoid API throttling
-3. **Intelligent Queue Management**: Implements a global semaphore system that respects API tier limits
-4. **Efficiency Optimization**: Balances high throughput with API quota preservation
+1. **🔄 External Semaphore Pattern**: Enables cross-service concurrency control following volcengine-concurrent-tts template
+2. **🚦 Global Concurrency Management**: All requests share a single semaphore pool to respect API limits
+3. **📊 Batch Processing**: List of Dict structure for optimal throughput and perfect input/output correspondence
+4. **🛡️ Account Protection**: Never exceeds Google Gemini API limits regardless of concurrent client load
+5. **⚡ FastAPI Performance**: Pure async architecture for maximum efficiency
 
 ### Google Gemini API Rate Limits (2024-2025):
 
-| Tier | RPM (Requests/Min) | TPM (Tokens/Min) | RPD (Requests/Day) |
-|------|-------------------|------------------|-------------------|
-| **Free Tier** | 5 | 25K | 25 |
-| **Tier 1 (Paid)** | 300 | 1M | 1,000 |
-| **Tier 2** | 1,000 | 2M | 10,000 |
-| **Tier 3 (Enterprise)** | Custom | Custom | Custom |
+| Tier | RPM (Requests/Min) | TPM (Tokens/Min) | RPD (Requests/Day) | **Recommended Concurrency** |
+|------|-------------------|------------------|-------------------|----------------------------|
+| **Free Tier** | 5 | 25K | 25 | **2-3** |
+| **Tier 1 (Paid)** | 300 | 1M | 1,000 | **15-20** |
+| **Tier 2** | 1,000 | 2M | 10,000 | **50-60** |
+| **Tier 3 (Enterprise)** | Custom | Custom | Custom | **Custom** |
 
 This service automatically manages concurrency to maximize throughput while staying within your tier's limits.
 
-## 2. Key Features
+## 🌟 Key Features
 
-- **🚦 Global Concurrency Control**: All incoming requests share a single queue, protecting your Gemini API key from being rate-limited, regardless of how many clients are calling the service.
-- **🔐 Flexible Authentication**: A robust, three-tiered authentication system to support both internal (trusted) and external (untrusted) requests.
-- **🎭 Dual-Mode Operation**:
-    - **Passthrough Chat**: A flexible endpoint that accepts standard Gemini chat inputs for general-purpose tasks.
-    - **Structured Output**: A powerful endpoint that forces the Gemini API to return a JSON object conforming to a user-provided JSON Schema.
-- **🐳 Dockerized for Portability**: Fully containerized for easy deployment, scaling, and integration into any environment.
+### 🚦 **Global Concurrency Control**
+- **Single Shared Semaphore**: All requests across ALL clients share one global semaphore pool
+- **API Protection**: Never exceeds your Gemini API account limits regardless of concurrent client load
+- **Rate Limit Compliance**: Automatic queue management prevents API throttling and 429 errors
 
-## 3. Authentication
+### 🌐 **External Semaphore Pattern Support**
+- **Cross-Service Coordination**: Supports external semaphore registry for multi-service concurrency control
+- **Global Semaphore Registry**: `/_admin/semaphores` endpoint for cross-service coordination
+- **Best Practice Compliance**: Follows volcengine-concurrent-tts template architecture
 
-This service uses a two-path authentication system. Access is granted if **either** of the following methods is used:
+### 📋 **Batch Processing Architecture**
+- **List of Dict Structure**: Standardized input/output format for optimal throughput
+- **Perfect Correspondence**: Each input request maps exactly to one output result
+- **Backward Compatibility**: Legacy single-request endpoints still supported
 
-### Method 1: Admin Authentication (for Trusted Internal Services)
+### 🔐 **3-Tier Authentication System**
+1. **Admin API Key** (Highest Priority) → Uses server's configured credentials
+2. **User Credentials** (Medium Priority) → Uses credentials from request payload  
+3. **Environment Variables** (Lowest Priority) → Fallback to .env configuration
 
-This method is for services that you trust. It uses a pre-shared secret key.
+### 🎭 **Dual-Mode Operation**
+- **Individual Endpoints**: Traditional single-request processing (`/chat`, `/structured-output`, etc.)
+- **Batch Endpoints**: High-throughput batch processing (`/batch/chat`, `/batch/structured-output`, etc.)
+- **Flexible Input**: Both modes support the same authentication and parameter structure
 
-- **How it works**: The service is launched with an `ADMIN_API_KEY` environment variable. The calling service must include this key in the `Admin-API-Key` header of its request.
-- **Gemini Key Usage**: If the admin keys match, this service will use its own `GEMINI_API_KEY` (also set as an environment variable) to process the request.
-- **Use Case**: Your other backend services calling this one.
+### 🐳 **Production Ready**
+- **Pure FastAPI**: High-performance async architecture
+- **Docker Support**: Fully containerized for easy deployment
+- **Health Monitoring**: Comprehensive status endpoints with semaphore monitoring
+- **Error Handling**: Robust error handling with detailed logging
 
-### Method 2: User-Provided Key (for External or Untrusted Clients)
+## 🔐 Authentication System
 
-This method allows any client to use the service by providing their own Gemini API key.
+The service implements a **3-tier authentication priority system** that provides flexibility for different deployment scenarios while maintaining security.
 
-- **How it works**: The client includes their Gemini API key inside the JSON payload of their request.
-- **Path**: `credentials.gemini_api_key`
-- **Use Case**: Public-facing applications or services where end-users provide their own API keys.
+### 🥇 **Tier 1: Admin API Key (Highest Priority)**
 
-If neither authentication method is successful, the service will return a `401 Unauthorized` error.
+**For trusted internal services and production deployments**
 
-## 4. Deployment
-
-The service is designed to be run as a Docker container.
-
-### Build the Docker Image
-
-Navigate to the `animagent-process/gemini-concurrent-generation` directory and run:
+- **Setup**: Configure `ADMIN_API_KEY` environment variable on server startup
+- **Usage**: Include `Admin-API-Key: your_admin_key` in request headers
+- **Credentials**: Server uses its own pre-configured `GEMINI_API_KEY` from environment
+- **Security**: No API keys exposed in request payloads
+- **Use Cases**: 
+  - Internal microservices communication
+  - Production backend-to-backend calls
+  - Centralized API key management
 
 ```bash
-docker build -t gemini-concurrent-generation .
+# Example request with Admin authentication
+curl -X POST http://localhost:5004/chat \
+  -H "Content-Type: application/json" \
+  -H "Admin-API-Key: your_secret_admin_key" \
+  -d '{"prompt": "Hello world"}'
 ```
 
-### Run the Docker Container
+### 🥈 **Tier 2: User-Provided Credentials (Medium Priority)**
 
-Run the container, mapping a port and setting the necessary environment variables for authentication.
+**For external clients and user-specific API usage**
+
+- **Setup**: No server configuration required
+- **Usage**: Include credentials in request payload under `credentials` object
+- **Credentials**: User provides their own `gemini_api_key` in request
+- **Security**: API keys visible in request payload (use HTTPS)
+- **Use Cases**:
+  - Public-facing applications
+  - User-specific API key billing
+  - Development and testing
 
 ```bash
-# Example: Running with both an Admin Key and a Server-side Gemini Key
+# Example request with user credentials
+curl -X POST http://localhost:5004/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "credentials": {"gemini_api_key": "user_api_key"},
+    "prompt": "Hello world"
+  }'
+```
+
+### 🥉 **Tier 3: Environment Variables (Lowest Priority)**
+
+**For simple deployments and backward compatibility**
+
+- **Setup**: Configure `GEMINI_API_KEY` environment variable
+- **Usage**: No headers or credentials required in requests
+- **Credentials**: Server uses environment variable automatically
+- **Security**: Server-side API key management
+- **Use Cases**:
+  - Simple single-user deployments
+  - Development environments
+  - Backward compatibility
+
+```bash
+# Example request with environment fallback
+curl -X POST http://localhost:5004/chat \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Hello world"}'
+```
+
+### 🚫 **Authentication Failure**
+
+If none of the three tiers provide valid credentials, the service returns:
+- **Status Code**: `401 Unauthorized`
+- **Message**: `"Authentication failed. Provide 'Admin-API-Key' in headers or complete credentials in payload."`
+
+## 🚀 Deployment & Configuration
+
+### ⚙️ **Environment Variables**
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ADMIN_API_KEY` | ❌ Optional | - | Secret key for admin authentication (Tier 1) |
+| `GEMINI_API_KEY` | ❌ Optional | - | Server's Gemini API key (for admin auth and env fallback) |
+| `GEMINI_CONCURRENCY_LIMIT` | ❌ Optional | `15` | Maximum concurrent requests (adjust per your Gemini tier) |
+| `PORT` | ❌ Optional | `5004` | Port number for the FastAPI server |
+
+### 🐳 **Docker Deployment**
+
+**Build the Docker Image:**
+```bash
+cd animagent-process/gemini-concurrent-generation
+docker build -t gemini-concurrent-generation:v2.0 .
+```
+
+**Production Deployment (Admin + Server Keys):**
+```bash
 docker run -d \
-  -p 5004:5004 \
   --name gemini-concurrent-generation \
-  -e ADMIN_API_KEY="your-super-secret-admin-key" \
-  -e GEMINI_API_KEY="your-server-side-gemini-key" \
+  -p 5004:5004 \
+  -e ADMIN_API_KEY="your_secure_admin_key_here" \
+  -e GEMINI_API_KEY="your_gemini_api_key_here" \
   -e GEMINI_CONCURRENCY_LIMIT=20 \
-  gemini-concurrent-generation
+  gemini-concurrent-generation:v2.0
 ```
 
-- `-p 5004:5004`: Map port 5004 on your host to port 5004 in the container.
-- `-e ADMIN_API_KEY`: **(Required for Admin Auth)** The secret key for trusted services.
-- `-e GEMINI_API_KEY`: **(Optional)** The server's own Gemini key. Only needed if you plan to use Admin Authentication.
-- `-e GEMINI_CONCURRENCY_LIMIT`: (Optional) Override the default concurrency limit of 15.
+**Development Deployment (Environment Fallback Only):**
+```bash
+docker run -d \
+  --name gemini-concurrent-generation \
+  -p 5004:5004 \
+  -e GEMINI_API_KEY="your_gemini_api_key_here" \
+  -e GEMINI_CONCURRENCY_LIMIT=5 \
+  gemini-concurrent-generation:v2.0
+```
 
-## 5. API Endpoints Overview
+**Public Service (User Credentials Only):**
+```bash
+docker run -d \
+  --name gemini-concurrent-generation \
+  -p 5004:5004 \
+  -e GEMINI_CONCURRENCY_LIMIT=30 \
+  gemini-concurrent-generation:v2.0
+```
 
-The service provides three main endpoints, each optimized for different use cases:
+### 🛠️ **Local Development**
 
-| Endpoint | Purpose | Schema | System Prompt | Best For |
-|----------|---------|--------|---------------|-----------| 
-| `/chat` | Simple LLM conversation | ❌ No | ✅ Supported | General chatbot interactions |
-| `/structured-output` | Custom JSON structure | ✅ **User-defined** | ✅ **Required** | Any structured data extraction |
-| `/cinematic-story-design` | Movie/animation stories | ✅ **Built-in** | ✅ **Required** | Cinematic story creation |
+**Using conda environment:**
+```bash
+cd animagent-process/gemini-concurrent-generation
+conda activate animagent
+pip install -r requirements.txt
 
-### 🎯 **System Prompt Best Practices**
+# Set environment variables (optional)
+export GEMINI_API_KEY="your_gemini_api_key"
+export GEMINI_CONCURRENCY_LIMIT=10
 
-**For optimal Structured Output results, we strongly recommend providing schema-specific system prompts!**
+# Run the server
+python app.py
+```
 
-- **Generic prompts** ❌: "Extract information"  
-- **Schema-specific prompts** ✅: "You are a story designer. Create a complete cinematic story with characters, scenes, and narrative structure following the provided schema."
+**Access the service:**
+- **Health Check**: http://localhost:5004/
+- **API Documentation**: http://localhost:5004/docs
+- **OpenAPI Schema**: http://localhost:5004/openapi.json
+
+## 📊 API Endpoints Overview
+
+The service provides **dual-mode operation** with both individual and batch processing endpoints:
+
+### 🎯 **Endpoint Categories**
+
+| Category | Individual Endpoints | Batch Endpoints | Best For |
+|----------|---------------------|-----------------|----------|
+| **💬 Chat** | `/chat` | `/batch/chat` | General LLM conversations |
+| **📋 Structured** | `/structured-output` | `/batch/structured-output` | Custom JSON extraction |
+| **🎬 Cinematic** | `/cinematic-story-design` | `/batch/cinematic-story-design` | Story generation |
+| **🔧 Admin** | `/_admin/*` | - | Service management |
+
+### ⚡ **Performance Comparison**
+
+| Mode | Input Format | Output Format | Throughput | Best Use Case |
+|------|-------------|---------------|------------|---------------|
+| **Individual** | Single request object | Single response | ⭐⭐⭐ Standard | Simple integrations, single requests |
+| **Batch** | `List[Dict]` | `List[Dict]` | ⭐⭐⭐⭐⭐ **Optimal** | High-throughput, bulk processing |
+
+### 🚀 **Batch Processing Benefits**
+
+- **📈 Higher Throughput**: Process multiple requests concurrently within shared semaphore
+- **📊 Perfect Correspondence**: Each input maps exactly to one output in the same order
+- **⚡ Optimal Resource Usage**: Single API call handles multiple Gemini requests
+- **🔄 Backward Compatible**: Same authentication and parameter structure as individual endpoints
 
 ---
 
-### Health Check
+### 🏥 **Health & Admin Endpoints**
 
+#### Health Check
 - **Endpoint**: `GET /`
-- **Description**: Checks if the service is running and returns its configuration.
-- **cURL Example**:
-  ```bash
-  curl http://localhost:5004/
-  ```
+- **Description**: Service status, configuration, and semaphore monitoring
+- **Authentication**: None required
 
-### 1. Chat Endpoint
+```bash
+curl http://localhost:5004/
+```
 
-- **Endpoint**: `POST /chat`
-- **Purpose**: Simple LLM conversations without structured output
-- **Use Case**: General chatbot interactions, Q&A, casual conversation
+#### Admin Semaphore Registry
+- **Endpoint**: `GET /_admin/semaphores`
+- **Description**: External semaphore management for cross-service coordination
+- **Authentication**: Admin API Key required
 
-#### Parameters:
+```bash
+curl -H "Admin-API-Key: your_admin_key" http://localhost:5004/_admin/semaphores
+```
+
+## 💬 Chat Endpoints
+
+### Individual Chat: `POST /chat`
+
+**Purpose**: Single LLM conversation request
+**Best For**: Simple integrations, single questions, chatbot interactions
+
+#### Request Parameters:
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `prompt` | string | ✅ **Yes** | - | The user's message/question |
 | `system_prompt` | string | ❌ Optional | `""` | Instructions for the AI's behavior |
 | `model` | string | ❌ Optional | `gemini-2.5-flash` | Gemini model to use |
-| `credentials.gemini_api_key` | string | ✅ **Required*** | - | Your Gemini API key |
+| `credentials` | object | ❌ Optional* | - | Authentication credentials |
 
-*\*Required unless using Admin-API-Key header*
+*Required unless using Admin-API-Key header or environment variables*
 
 #### Examples:
 
-**User-Provided Key:**
+**Tier 1 (Admin Key):**
+```bash
+curl -X POST http://localhost:5004/chat \
+  -H "Content-Type: application/json" \
+  -H "Admin-API-Key: your_admin_key" \
+  -d '{
+    "prompt": "What is the speed of light?",
+    "system_prompt": "You are a helpful physics teacher."
+  }'
+```
+
+**Tier 2 (User Credentials):**
 ```bash
 curl -X POST http://localhost:5004/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "credentials": {
-      "gemini_api_key": "YOUR_API_KEY"
+    "credentials": {"gemini_api_key": "your_gemini_key"},
+    "prompt": "What is the speed of light?",
+    "system_prompt": "You are a helpful physics teacher."
+  }'
+```
+
+**Tier 3 (Environment Variables):**
+```bash
+curl -X POST http://localhost:5004/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "What is the speed of light?",
+    "system_prompt": "You are a helpful physics teacher."
+  }'
+```
+
+### Batch Chat: `POST /batch/chat`
+
+**Purpose**: Multiple LLM conversation requests in a single API call
+**Best For**: High-throughput applications, bulk processing, optimal concurrency usage
+
+#### Request Structure:
+
+```json
+{
+  "requests": [
+    {
+      "prompt": "What is the speed of light?",
+      "system_prompt": "You are a helpful physics teacher.",
+      "model": "gemini-2.5-flash"
     },
-    "prompt": "What is the speed of light?",
-    "system_prompt": "You are a helpful physics teacher."
-  }'
+    {
+      "prompt": "Explain quantum mechanics",
+      "system_prompt": "You are a quantum physics expert.",
+      "model": "gemini-2.5-pro"
+    }
+  ],
+  "credentials": {"gemini_api_key": "your_key"},
+  "external_semaphore_id": "optional_cross_service_id"
+}
 ```
 
-**Admin Key:**
-```bash
-curl -X POST http://localhost:5004/chat \
-  -H "Content-Type: application/json" \
-  -H "Admin-API-Key: your-admin-key" \
-  -d '{
-    "prompt": "What is the speed of light?",
-    "system_prompt": "You are a helpful physics teacher."
-  }'
+#### Response Structure:
+
+```json
+{
+  "results": [
+    {
+      "success": true,
+      "response": "The speed of light is approximately 299,792,458 meters per second...",
+      "model": "gemini-2.5-flash",
+      "index": 0
+    },
+    {
+      "success": true, 
+      "response": "Quantum mechanics is the fundamental theory in physics...",
+      "model": "gemini-2.5-pro",
+      "index": 1
+    }
+  ],
+  "total_requests": 2,
+  "successful_requests": 2,
+  "failed_requests": 0
+}
 ```
 
-### 2. Structured Output
+## 📋 Structured Output Endpoints
 
-- **Endpoint**: `POST /structured-output`
-- **Purpose**: Custom JSON structure generation with user-defined schema
-- **Use Case**: Any structured data extraction, form processing, data analysis
+### Individual Structured Output: `POST /structured-output`
 
-#### Parameters:
+**Purpose**: Custom JSON structure generation with user-defined schema
+**Best For**: Single data extraction tasks, custom schemas, specific structured outputs
+
+#### Request Parameters:
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `user_content` | string | ✅ **Yes** | - | The content to process/extract from |
-| `system_prompt` | string | ✅ **Yes** | - | **Critical**: Schema-specific instructions for best results |
-| `json_schema` | object | ✅ **Yes** | - | JSON Schema definition for the expected output structure |
+| `user_content` | string | ✅ **Yes** | - | Content to process/extract from |
+| `system_prompt` | string | ✅ **Yes** | - | **Critical**: Schema-specific instructions |
+| `json_schema` | object | ✅ **Yes** | - | JSON Schema definition for output structure |
 | `model` | string | ❌ Optional | `gemini-2.5-pro` | Gemini model to use |
-| `credentials.gemini_api_key` | string | ✅ **Required*** | - | Your Gemini API key |
+| `credentials` | object | ❌ Optional* | - | Authentication credentials |
 
-*\*Required unless using Admin-API-Key header*
+*Required unless using Admin-API-Key header or environment variables*
 
-#### Examples:
+#### Example:
 
-**User-Provided Key:**
 ```bash
 curl -X POST http://localhost:5004/structured-output \
   -H "Content-Type: application/json" \
+  -H "Admin-API-Key: your_admin_key" \
   -d '{
-    "credentials": {
-      "gemini_api_key": "YOUR_API_KEY"
-    },
-    "system_prompt": "You are a data extraction expert. Extract the person'\''s name and location from the text with high accuracy.",
+    "system_prompt": "Extract person info with high accuracy.",
     "user_content": "My name is Jane and I live in New York.",
     "json_schema": {
       "type": "object",
@@ -199,89 +402,173 @@ curl -X POST http://localhost:5004/structured-output \
   }'
 ```
 
-**Admin Key:**
-```bash
-curl -X POST http://localhost:5004/structured-output \
-  -H "Content-Type: application/json" \
-  -H "Admin-API-Key: your-admin-key" \
-  -d '{
-    "system_prompt": "You are a data extraction expert. Extract the person'\''s name and location from the text with high accuracy.",
-    "user_content": "My name is Jane and I live in New York.",
-    "json_schema": {
-      "type": "object",
-      "properties": {
-        "name": {"type": "string"},
-        "city": {"type": "string"}
-      },
-      "required": ["name", "city"]
+### Batch Structured Output: `POST /batch/structured-output`
+
+**Purpose**: Multiple structured extractions with different schemas in one API call
+**Best For**: Bulk data processing, multiple extractions, optimal concurrency usage
+
+#### Request Structure:
+
+```json
+{
+  "requests": [
+    {
+      "user_content": "My name is Jane and I live in New York.",
+      "system_prompt": "Extract person info accurately.",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "city": {"type": "string"}
+        },
+        "required": ["name", "city"]
+      }
+    },
+    {
+      "user_content": "Product: iPhone 15, Price: $999, Color: Blue",
+      "system_prompt": "Extract product information.",
+      "json_schema": {
+        "type": "object", 
+        "properties": {
+          "product": {"type": "string"},
+          "price": {"type": "number"},
+          "color": {"type": "string"}
+        },
+        "required": ["product", "price", "color"]
+      }
     }
-  }'
+  ],
+  "credentials": {"gemini_api_key": "your_key"}
+}
 ```
 
-### 3. Cinematic Story Design
+#### Response Structure:
 
-- **Endpoint**: `POST /cinematic-story-design`
-- **Purpose**: Movie/animation story creation with built-in comprehensive schema
-- **Use Case**: Professional cinematic story generation, animation scripts, video content planning
+```json
+{
+  "results": [
+    {
+      "success": true,
+      "data": {"name": "Jane", "city": "New York"},
+      "message": "Successfully generated structured output",
+      "index": 0
+    },
+    {
+      "success": true,
+      "data": {"product": "iPhone 15", "price": 999, "color": "Blue"},
+      "message": "Successfully generated structured output", 
+      "index": 1
+    }
+  ],
+  "total_requests": 2,
+  "successful_requests": 2,
+  "failed_requests": 0
+}
+```
 
-#### Parameters:
+## 🎬 Cinematic Story Design Endpoints
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `user_content` | string | ✅ **Yes** | - | Story concept, theme, or outline to develop |
-| `system_prompt` | string | ✅ **Yes** | - | **Critical**: Story-specific instructions for best cinematic results |
-| `model` | string | ❌ Optional | `gemini-2.5-pro` | Gemini model to use |
-| `credentials.gemini_api_key` | string | ✅ **Required*** | - | Your Gemini API key |
+### Individual Cinematic Story: `POST /cinematic-story-design`
 
-*\*Required unless using Admin-API-Key header*
+**Purpose**: Professional movie/animation story creation with comprehensive built-in schema
+**Best For**: Single story generation, animation scripts, cinematic planning
 
 #### Built-in Schema Structure:
-This endpoint automatically uses a comprehensive schema including:
-- **Story Metadata**: title, YouTube video details, hashtags
-- **Visual Elements**: illustration style, cover image descriptions
-- **Narrator Configuration**: name, gender, voice ID
-- **Character Definitions**: detailed character descriptions for image generation
-- **Chapter Structure**: organized chapter breakdown with scene references
-- **Scene Details**: complete scene descriptions, character interactions, audio scripts
-- **Content Optimization**: tweet summaries, intentional repetition flags
+- **📝 Story Metadata**: title, YouTube details, hashtags
+- **🎨 Visual Elements**: illustration style, cover image descriptions  
+- **🎙️ Narrator Configuration**: name, gender, voice ID
+- **👥 Character Definitions**: detailed descriptions for image generation
+- **📖 Chapter Structure**: organized breakdown with scene references
+- **🎬 Scene Details**: descriptions, character interactions, audio scripts
+- **📱 Content Optimization**: tweet summaries, repetition flags
 
-#### Examples:
+#### Request Parameters:
 
-**User-Provided Key:**
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `user_content` | string | ✅ **Yes** | - | Story concept, theme, or outline |
+| `system_prompt` | string | ✅ **Yes** | - | **Critical**: Story-specific instructions |
+| `model` | string | ❌ Optional | `gemini-2.5-pro` | Gemini model to use |
+| `credentials` | object | ❌ Optional* | - | Authentication credentials |
+
+*Required unless using Admin-API-Key header or environment variables*
+
+#### Example:
+
 ```bash
 curl -X POST http://localhost:5004/cinematic-story-design \
   -H "Content-Type: application/json" \
+  -H "Admin-API-Key: your_admin_key" \
   -d '{
-    "credentials": {
-      "gemini_api_key": "YOUR_API_KEY"
-    },
-    "system_prompt": "You are a master storyteller and cinematic director. Create a complete story structure with vivid character descriptions suitable for animation and compelling scene narratives that flow naturally.",
-    "user_content": "Create a historical drama about Liu Bang, the founder of Han Dynasty, focusing on his rise from a peasant to emperor with themes of leadership and perseverance."
+    "system_prompt": "Master storyteller creating complete cinematic structure with vivid characters and compelling narratives.",
+    "user_content": "Historical drama about Liu Bang, founder of Han Dynasty, focusing on his rise from peasant to emperor."
   }'
 ```
 
-**Admin Key:**
-```bash
-curl -X POST http://localhost:5004/cinematic-story-design \
-  -H "Content-Type: application/json" \
-  -H "Admin-API-Key: your-admin-key" \
-  -d '{
-    "system_prompt": "You are a master storyteller and cinematic director. Create a complete story structure with vivid character descriptions suitable for animation and compelling scene narratives that flow naturally.",
-    "user_content": "Create a historical drama about Liu Bang, the founder of Han Dynasty, focusing on his rise from a peasant to emperor with themes of leadership and perseverance."
-  }'
+### Batch Cinematic Stories: `POST /batch/cinematic-story-design`
+
+**Purpose**: Multiple story generation with the same comprehensive schema
+**Best For**: Bulk story creation, series planning, content production pipelines
+
+#### Request Structure:
+
+```json
+{
+  "requests": [
+    {
+      "user_content": "Historical drama about Liu Bang's rise to power",
+      "system_prompt": "Create epic historical narrative with strong character development.",
+      "model": "gemini-2.5-pro"
+    },
+    {
+      "user_content": "Sci-fi adventure on Mars colony in 2150",
+      "system_prompt": "Develop futuristic story with technology and human themes.",
+      "model": "gemini-2.5-pro" 
+    }
+  ],
+  "credentials": {"gemini_api_key": "your_key"}
+}
 ```
 
 ---
 
-## 6. Scalable Endpoint Structure
+## 🌐 External Semaphore Pattern
 
-The service supports unlimited expansion of new endpoints under the same path structure:
-```
-http://your-server:5004/{endpoint-name}
+### Cross-Service Concurrency Control
+
+The service supports **External Semaphore Pattern** for coordinating concurrency across multiple services:
+
+#### Register Global Semaphore:
+```bash
+curl -X POST http://localhost:5004/_admin/semaphores \
+  -H "Admin-API-Key: your_admin_key" \
+  -H "Content-Type: application/json" \
+  -d '{"semaphore_id": "global_ai_services", "limit": 50}'
 ```
 
-This allows adding future features like:
-- `/image-analysis` - AI image processing
-- `/code-generation` - Code generation assistance  
-- `/translation` - Multi-language translation
-- `/document-processing` - Document analysis and extraction
+#### Use in Batch Requests:
+```json
+{
+  "requests": [...],
+  "external_semaphore_id": "global_ai_services",
+  "credentials": {"gemini_api_key": "your_key"}
+}
+```
+
+This enables multiple AI services (Gemini, Replicate, VolcEngine) to share a **single global concurrency pool**, preventing total API usage from exceeding account limits.
+
+---
+
+## 🚀 Migration from v1.0
+
+### Breaking Changes:
+- **❌ Flask removed**: Pure FastAPI architecture 
+- **❌ File management removed**: URL-only responses for security
+- **✅ Batch endpoints added**: New `/batch/*` endpoints with List[Dict] structure
+- **✅ External semaphore support**: Cross-service coordination
+- **✅ Enhanced authentication**: 3-tier priority system
+
+### Backward Compatibility:
+- **✅ All individual endpoints**: Same API contract as v1.0
+- **✅ Authentication methods**: Previous auth methods still work
+- **✅ Response formats**: Individual endpoint responses unchanged
